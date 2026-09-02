@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Street Blasphemer</title>
+
+<!-- Firebase (compat SDK, va bene per un progetto semplice come questo) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+  :root{
+    --bg:#0c0e14;
+    --neon-pink:#ff3d7f;
+    --neon-cyan:#3de3ff;
+    --neon-gold:#ffb23d;
+    --panel:#1b202c;
+    --line:#2c3242;
+    --text:#eae6f0;
+    --muted:#8b90a3;
+    --fire1:#ff5a2e;
+    --fire2:#ffcf3d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse at 50% -10%, #3a1c3e 0%, transparent 55%),
+      linear-gradient(180deg, var(--bg) 0%, #06070b 100%);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:20px 14px 60px;
+  }
+  .screen{display:none; width:100%; max-width:440px;}
+  .screen.active{display:block;}
+
+  .arcade-title{
+    text-align:center;
+    font-family:'Arial Black','Impact',sans-serif;
+    font-weight:900;
+    font-size:2.1rem;
+    letter-spacing:0.03em;
+    margin:6px 0 4px;
+    color:var(--neon-gold);
+    text-shadow:0 0 6px var(--neon-gold), 0 0 18px var(--neon-pink), 2px 2px 0 #000;
+    text-transform:uppercase;
+  }
+  .arcade-sub{
+    text-align:center;
+    font-size:0.7rem;
+    letter-spacing:0.25em;
+    color:var(--neon-cyan);
+    text-shadow:0 0 8px var(--neon-cyan);
+    margin-bottom:26px;
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px;
+  }
+  label{display:block; font-size:0.78rem; color:var(--muted); margin:12px 0 5px;}
+  input[type="text"], input[type="password"], input[type="email"]{
+    width:100%; padding:11px 12px; border-radius:8px;
+    border:1px solid var(--line); background:#10131c; color:var(--text); font-size:0.95rem;
+  }
+  .btn{
+    width:100%; padding:13px; border-radius:9px; border:none;
+    font-size:0.95rem; font-weight:700; cursor:pointer; margin-top:18px;
+    background:linear-gradient(180deg, var(--neon-pink), #b3204e); color:#fff;
+  }
+  .btn:active{opacity:0.85;}
+  .btn.secondary{background:transparent; border:1px solid var(--line); color:var(--neon-cyan);}
+  .link-row{text-align:center; margin-top:16px; font-size:0.82rem; color:var(--muted);}
+  .link-row a{color:var(--neon-cyan); cursor:pointer; text-decoration:underline;}
+  .error-msg{color:var(--neon-pink); font-size:0.8rem; margin-top:10px; min-height:1em;}
+  .toast{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+    background:#1e2432; border:1px solid var(--neon-cyan); color:var(--text);
+    padding:11px 18px; border-radius:10px; font-size:0.82rem; max-width:90%; text-align:center;
+    box-shadow:0 0 14px rgba(61,227,255,0.35); z-index:50; opacity:0; pointer-events:none;
+    transition:opacity 0.25s;
+  }
+  .toast.show{opacity:1;}
+
+  .char-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin:16px 0;}
+  .char-card{
+    background:#10131c; border:2px solid var(--line); border-radius:12px;
+    padding:10px 4px; text-align:center; cursor:pointer;
+  }
+  .char-card .sprite{
+    font-size:1.9rem; width:52px; height:52px; margin:0 auto 6px;
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+  }
+  .char-card .cname{font-size:0.68rem; color:var(--muted);}
+  .char-card.selected{border-color:var(--neon-gold); box-shadow:0 0 12px rgba(255,178,61,0.45);}
+  .char-card.selected .cname{color:var(--neon-gold);}
+
+  .player-row{display:flex; align-items:center; gap:12px; padding:12px 8px; border-bottom:1px solid var(--line);}
+  .player-row:last-child{border-bottom:none;}
+  .p-sprite{
+    width:44px; height:44px; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:1.5rem; flex-shrink:0;
+  }
+  .p-info{flex:1; min-width:0;}
+  .p-name{font-size:0.92rem; font-weight:600;}
+  .p-streak{font-size:0.74rem; color:var(--muted);}
+  .challenge-btn{
+    background:var(--neon-pink); color:#fff; border:none; padding:8px 14px;
+    border-radius:8px; font-size:0.78rem; cursor:pointer;
+  }
+  .topbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; font-size:0.8rem; color:var(--muted);}
+  .topbar .me{color:var(--neon-gold);}
+  .logout{color:var(--neon-cyan); cursor:pointer; text-decoration:underline;}
+  .empty-note{color:var(--muted); font-size:0.85rem; text-align:center; padding:16px;}
+  .live-dot{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    background:#4ade80; box-shadow:0 0 6px #4ade80; margin-right:5px;
+  }
+
+  .battle-wrap{
+    position:relative; border-radius:16px; overflow:hidden; border:1px solid var(--line);
+    background:linear-gradient(180deg, #1a1030 0%, #2b1836 40%, #241522 70%, #120c17 100%);
+    padding:16px 14px 20px;
+  }
+  .skyline{
+    height:46px;
+    background:linear-gradient(180deg, transparent, rgba(0,0,0,0.3)),
+      repeating-linear-gradient(90deg, #1c1330 0 24px, #241a3a 24px 48px);
+    position:relative; margin:0 -14px 10px; opacity:0.8;
+  }
+  .lanterns{position:absolute; top:2px; left:0; right:0; display:flex; justify-content:space-around; font-size:1rem;}
+  .torii{text-align:center; font-size:1.6rem; opacity:0.55; margin-bottom:4px;}
+  .power-bar-wrap{
+    height:22px; border-radius:11px; background:#0c0e14; border:1px solid var(--line);
+    overflow:hidden; display:flex; margin:6px 0 4px;
+  }
+  .power-a{background:linear-gradient(90deg, var(--fire1), var(--fire2)); height:100%; width:0%; transition:width 0.25s;}
+  .power-b{background:linear-gradient(90deg, var(--neon-cyan), #2d6fff); height:100%; width:0%; transition:width 0.25s;}
+  .score-row{display:flex; justify-content:space-between; font-size:0.72rem; color:var(--muted); margin-bottom:14px;}
+  .fighters-row{display:flex; justify-content:space-between; align-items:flex-end; position:relative; min-height:150px;}
+  .fighter{width:44%; text-align:center;}
+  .fighter .big-sprite{font-size:3.4rem; filter:drop-shadow(0 6px 6px rgba(0,0,0,0.5)); transition:transform 0.12s;}
+  .fighter.tappable .big-sprite{cursor:pointer;}
+  .fighter.tappable .big-sprite:active{transform:scale(0.88) rotate(-4deg);}
+  .fighter .fname{font-size:0.78rem; margin-top:4px; font-weight:700;}
+  .fighter.right .fname{color:var(--neon-cyan);}
+  .fighter.left .fname{color:var(--fire2);}
+  .vs-mark{font-family:'Arial Black',sans-serif; font-size:1rem; color:var(--neon-gold); text-shadow:0 0 8px var(--neon-gold);}
+  .fireball{
+    position:absolute; bottom:56px; width:20px; height:20px; border-radius:50%;
+    background:radial-gradient(circle, var(--fire2), var(--fire1)); box-shadow:0 0 10px var(--fire1);
+    pointer-events:none; animation:flyRight 0.55s ease-out forwards;
+  }
+  .fireball.reverse{animation:flyLeft 0.55s ease-out forwards;}
+  @keyframes flyRight{0%{left:18%; opacity:1;} 100%{left:78%; opacity:0.2;}}
+  @keyframes flyLeft{0%{right:18%; opacity:1;} 100%{right:78%; opacity:0.2;}}
+  .ko-flash{
+    position:absolute; inset:0; background:rgba(255,178,61,0.18); display:flex;
+    align-items:center; justify-content:center; font-family:'Arial Black',sans-serif;
+    font-size:1.8rem; color:var(--neon-gold); text-shadow:0 0 10px var(--neon-gold);
+    opacity:0; pointer-events:none;
+  }
+  .ko-flash.show{opacity:1; animation:koFade 0.9s ease-out forwards;}
+  @keyframes koFade{0%{opacity:1;} 100%{opacity:0;}}
+
+  .emblems-row{display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:16px;}
+  .emblem{
+    width:38px; height:38px; clip-path:polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%);
+    background:#161a24; border:1px solid #333a4d; display:flex; align-items:center;
+    justify-content:center; font-size:1rem; opacity:0.35; filter:grayscale(1);
+  }
+  .emblem.unlocked{
+    opacity:1; filter:none; background:linear-gradient(160deg, #2c2410, #1a1608);
+    border-color:var(--neon-gold); box-shadow:0 0 8px rgba(255,178,61,0.5);
+  }
+  .emblems-caption{text-align:center; font-size:0.68rem; color:var(--muted); margin-top:6px;}
+  .back-link{text-align:center; margin-top:18px; font-size:0.82rem; color:var(--neon-cyan); cursor:pointer; text-decoration:underline;}
+
+  .setup-box{
+    max-width:440px; margin:40px auto; background:var(--panel); border:1px solid var(--line);
+    border-radius:14px; padding:22px; font-size:0.88rem; line-height:1.5;
+  }
+  .setup-box code{
+    display:block; background:#0c0e14; padding:10px; border-radius:8px; margin:8px 0;
+    font-size:0.78rem; color:var(--neon-cyan); overflow-x:auto; white-space:pre;
+  }
+</style>
+</head>
+<body>
+
+<div class="arcade-title">Street Blasphemer</div>
+<div class="arcade-sub">— ARCADE BLASPHEMY FIGHTER —</div>
+
+<!-- SETUP NOTICE (visibile solo finché non incolli la config Firebase qui sotto nel codice) -->
+<div class="screen active" id="screen-setup">
+  <div class="setup-box">
+    <strong>Configurazione Firebase mancante.</strong><br><br>
+    Apri questo file con un editor di testo, cerca <code>const firebaseConfig = {</code> vicino all'inizio dello script in fondo alla pagina, e incolla lì i valori del tuo progetto Firebase (li trovi in Impostazioni progetto → Le tue app, dopo aver registrato una web app).<br><br>
+    Una volta salvato il file con i valori corretti, ricaricalo: questa schermata sparirà e vedrai la schermata di login.
+  </div>
+</div>
+
+<!-- LOGIN / REGISTER -->
+<div class="screen" id="screen-auth">
+  <div class="panel">
+    <div id="loginForm">
+      <label>Nome utente</label>
+      <input type="text" id="loginUser">
+      <label>Password</label>
+      <input type="password" id="loginPass">
+      <button class="btn" id="loginBtn">Accedi</button>
+      <div class="error-msg" id="loginError"></div>
+      <div class="link-row">Non hai un account? <a id="showRegister">Registrati</a></div>
+    </div>
+
+    <div id="registerForm" style="display:none;">
+      <label>Email</label>
+      <input type="email" id="regEmail">
+      <label>Nome utente</label>
+      <input type="text" id="regUser">
+      <label>Password</label>
+      <input type="password" id="regPass">
+      <button class="btn secondary" id="goCharSelect">Scegli il tuo personaggio →</button>
+      <div class="error-msg" id="regError"></div>
+      <div class="link-row">Hai già un account? <a id="showLogin">Accedi</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- CHARACTER SELECT -->
+<div class="screen" id="screen-charselect">
+  <div class="panel">
+    <label style="font-size:0.9rem; color:var(--text); text-align:center; display:block;">Scegli il tuo combattente</label>
+    <div class="char-grid" id="charGrid"></div>
+    <button class="btn" id="confirmCharBtn">Entra nell'arena</button>
+    <div class="error-msg" id="charError"></div>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div class="screen" id="screen-lobby">
+  <div class="topbar">
+    <span><span class="live-dot"></span>Combattente: <span class="me" id="meLabel"></span></span>
+    <span class="logout" id="logoutBtn">Esci</span>
+  </div>
+  <div class="panel">
+    <div id="playerList"></div>
+  </div>
+  <div class="emblems-row" id="lobbyEmblems"></div>
+  <div class="emblems-caption">I tuoi emblemi di disciplina</div>
+</div>
+
+<!-- BATTLE -->
+<div class="screen" id="screen-battle">
+  <div class="battle-wrap" id="battleWrap">
+    <div class="ko-flash" id="koFlash">K.O.!</div>
+    <div class="skyline"><div class="lanterns">🏮 🏮 🏮 🏮 🏮</div></div>
+    <div class="torii">⛩️</div>
+    <div class="power-bar-wrap">
+      <div class="power-a" id="powerA"></div>
+      <div class="power-b" id="powerB"></div>
+    </div>
+    <div class="score-row">
+      <span id="scoreA">0</span>
+      <span id="roundLabel">Round in corso</span>
+      <span id="scoreB">0</span>
+    </div>
+    <div class="fighters-row" id="fightersRow">
+      <div class="fighter left tappable" id="fighterLeft">
+        <div class="big-sprite" id="spriteLeft"></div>
+        <div class="fname" id="nameLeft"></div>
+      </div>
+      <div class="vs-mark">VS</div>
+      <div class="fighter right" id="fighterRight">
+        <div class="big-sprite" id="spriteRight"></div>
+        <div class="fname" id="nameRight"></div>
+      </div>
+    </div>
+  </div>
+  <div class="emblems-row" id="battleEmblems"></div>
+  <div class="emblems-caption">I tuoi emblemi di disciplina</div>
+  <div class="back-link" id="backToLobby">← Torna alla lobby</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   1) INCOLLA QUI LA CONFIG DEL TUO PROGETTO FIREBASE
+   (Console Firebase → Impostazioni progetto → Le tue app → SDK config)
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyBCzj5tHrfYDnNfBpOt5XT50iAPkbIo2Kg",
+  authDomain: "street-blasphemer.firebaseapp.com",
+  projectId: "street-blasphemer",
+  storageBucket: "street-blasphemer.firebasestorage.app",
+  messagingSenderId: "1090706237408",
+  appId: "1:1090706237408:web:6a1e59b0d7867fd3296d85",
+  measurementId: "G-B3EWBHB660"
+};
+/* ============================================================ */
+
+const CHARACTERS = [
+  {id:'kaen', name:'Kaen', emoji:'🔥', color:'#ff5a2e'},
+  {id:'tsurugi', name:'Tsurugi', emoji:'⚔️', color:'#3de3ff'},
+  {id:'yokaichan', name:'Yokai-Chan', emoji:'👹', color:'#ff3d7f'},
+  {id:'raijinjr', name:'Raijin Jr.', emoji:'⚡', color:'#ffb23d'},
+  {id:'nekomata', name:'Nekomata', emoji:'🐱', color:'#c084fc'},
+  {id:'darumafist', name:'Daruma Fist', emoji:'🥊', color:'#f87171'},
+  {id:'kitsuneblaze', name:'Kitsune Blaze', emoji:'🦊', color:'#fb923c'},
+  {id:'tengustorm', name:'Tengu Storm', emoji:'👺', color:'#4ade80'},
+];
+const EMBLEM_THRESHOLDS = [
+  {days:1, icon:'🕯️', name:'1 giorno'},
+  {days:2, icon:'🛡️', name:'2 giorni'},
+  {days:3, icon:'⚙️', name:'3 giorni'},
+  {days:7, icon:'❄️', name:'7 giorni'},
+  {days:15, icon:'🗡️', name:'15 giorni'},
+  {days:30, icon:'💠', name:'30 giorni'},
+];
+const SESSION_KEY = 'sb_session';
+
+let db = null;
+let users = [];
+let currentUser = null;
+let pendingRegistration = null;
+let activeBattle = null;
+let battleUnsub = null;
+
+const $ = (id) => document.getElementById(id);
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+function todayISO() { return new Date().toISOString().slice(0,10); }
+function daysBetween(a, b) {
+  return Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00')) / 86400000);
+}
+function simpleHash(str) {
+  let h = 0;
+  for (let i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) >>> 0; }
+  return h.toString(36);
+}
+function charById(id){ return CHARACTERS.find(c => c.id === id); }
+function currentStreak(u){
+  if (!u.lastInfraction) return daysBetween(u.joinDate, todayISO());
+  return daysBetween(u.lastInfraction, todayISO());
+}
+function bestStreakLive(u){
+  const s = currentStreak(u);
+  return Math.max(s, u.bestStreak || 0);
+}
+function battleIdFor(id1, id2){
+  return [id1, id2].sort().join('__');
+}
+
+/* ---------- FIREBASE INIT + LIVE USERS ---------- */
+function initFirebase(){
+  if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'INCOLLA_QUI') {
+    showScreen('screen-setup');
+    return false;
+  }
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  db.collection('users').onSnapshot(snap => {
+    users = snap.docs.map(d => d.data());
+    if (currentUser) {
+      const fresh = users.find(u => u.id === currentUser.id);
+      if (fresh) currentUser = fresh;
+    }
+    if ($('screen-lobby').classList.contains('active')) renderLobby();
+  }, err => {
+    showToast('Errore di connessione a Firebase: ' + err.code);
+  });
+  return true;
+}
+
+/* ---------- AUTH ---------- */
+$('showRegister').addEventListener('click', () => {
+  $('loginForm').style.display='none';
+  $('registerForm').style.display='block';
+});
+$('showLogin').addEventListener('click', () => {
+  $('registerForm').style.display='none';
+  $('loginForm').style.display='block';
+});
+
+$('loginBtn').addEventListener('click', () => {
+  const uname = $('loginUser').value.trim();
+  const pass = $('loginPass').value;
+  const user = users.find(u => u.username.toLowerCase() === uname.toLowerCase());
+  if (!user || user.passHash !== simpleHash(pass)) {
+    $('loginError').textContent = 'Nome utente o password non corretti.';
+    return;
+  }
+  $('loginError').textContent = '';
+  logIn(user);
+});
+
+$('goCharSelect').addEventListener('click', () => {
+  const email = $('regEmail').value.trim();
+  const uname = $('regUser').value.trim();
+  const pass = $('regPass').value;
+  if (!email || !uname || !pass) {
+    $('regError').textContent = 'Compila tutti i campi.';
+    return;
+  }
+  if (users.some(u => u.username.toLowerCase() === uname.toLowerCase())) {
+    $('regError').textContent = 'Nome utente già in uso.';
+    return;
+  }
+  $('regError').textContent = '';
+  pendingRegistration = { email, username: uname, passHash: simpleHash(pass) };
+  renderCharGrid();
+  showScreen('screen-charselect');
+});
+
+/* ---------- CHARACTER SELECT ---------- */
+let selectedCharId = null;
+function renderCharGrid(){
+  selectedCharId = null;
+  $('charGrid').innerHTML = CHARACTERS.map(c => `
+    <div class="char-card" data-id="${c.id}">
+      <div class="sprite" style="background:${c.color}22; border:2px solid ${c.color};">${c.emoji}</div>
+      <div class="cname">${c.name}</div>
+    </div>
+  `).join('');
+  $('charGrid').querySelectorAll('.char-card').forEach(card => {
+    card.addEventListener('click', () => {
+      selectedCharId = card.dataset.id;
+      $('charGrid').querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+    });
+  });
+}
+$('confirmCharBtn').addEventListener('click', async () => {
+  if (!selectedCharId) {
+    $('charError').textContent = 'Scegli un personaggio prima di continuare.';
+    return;
+  }
+  $('charError').textContent = '';
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  const newUser = {
+    id,
+    email: pendingRegistration.email,
+    username: pendingRegistration.username,
+    passHash: pendingRegistration.passHash,
+    characterId: selectedCharId,
+    joinDate: todayISO(),
+    lastInfraction: null,
+    bestStreak: 0,
+  };
+  try {
+    await db.collection('users').doc(id).set(newUser);
+  } catch (e) {
+    $('charError').textContent = 'Errore di salvataggio: ' + e.code;
+    return;
+  }
+  pendingRegistration = null;
+  logIn(newUser);
+});
+
+/* ---------- SESSION ---------- */
+function logIn(user){
+  currentUser = user;
+  try { localStorage.setItem(SESSION_KEY, user.id); } catch(e){}
+  renderLobby();
+  showScreen('screen-lobby');
+}
+$('logoutBtn').addEventListener('click', () => {
+  currentUser = null;
+  try { localStorage.removeItem(SESSION_KEY); } catch(e){}
+  $('loginUser').value=''; $('loginPass').value='';
+  showScreen('screen-auth');
+});
+
+/* ---------- LOBBY ---------- */
+function renderEmblems(container, u){
+  container.innerHTML = EMBLEM_THRESHOLDS.map(e => {
+    const unlocked = bestStreakLive(u) >= e.days;
+    return `<div class="emblem${unlocked?' unlocked':''}" title="${e.name} senza bestemmiare">${e.icon}</div>`;
+  }).join('');
+}
+function renderLobby(){
+  const ch = charById(currentUser.characterId);
+  $('meLabel').textContent = `${currentUser.username} (${ch.name})`;
+  const others = users.filter(u => u.id !== currentUser.id);
+  if (!others.length) {
+    $('playerList').innerHTML = '<div class="empty-note">Nessun altro combattente registrato ancora. Invita qualcuno!</div>';
+  } else {
+    $('playerList').innerHTML = others.map(u => {
+      const c = charById(u.characterId);
+      return `
+        <div class="player-row">
+          <div class="p-sprite" style="background:${c.color}22; border:1px solid ${c.color};">${c.emoji}</div>
+          <div class="p-info">
+            <div class="p-name">${u.username}</div>
+            <div class="p-streak">${c.name} — ${currentStreak(u)} giorni puliti</div>
+          </div>
+          <button class="challenge-btn" data-id="${u.id}">Sfida</button>
+        </div>
+      `;
+    }).join('');
+    $('playerList').querySelectorAll('.challenge-btn').forEach(btn => {
+      btn.addEventListener('click', () => challenge(btn.dataset.id));
+    });
+  }
+  renderEmblems($('lobbyEmblems'), currentUser);
+}
+
+async function challenge(opponentId){
+  const opponent = users.find(u => u.id === opponentId);
+  const bId = battleIdFor(currentUser.id, opponentId);
+  const ref = db.collection('battles').doc(bId);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    await ref.set({ aId: currentUser.id, bId: opponentId, aCount:0, bCount:0, roundsA:0, roundsB:0 });
+  }
+  showToast(`Notifica inviata (simulata) a ${opponent.email} — sfida da ${currentUser.username}`);
+  openBattle(bId, opponent);
+}
+
+/* ---------- BATTLE ---------- */
+function openBattle(battleId, opponent){
+  const meChar = charById(currentUser.characterId);
+  const oppChar = charById(opponent.characterId);
+
+  $('spriteLeft').textContent = meChar.emoji;
+  $('nameLeft').textContent = currentUser.username;
+  $('spriteRight').textContent = oppChar.emoji;
+  $('nameRight').textContent = opponent.username;
+
+  renderEmblems($('battleEmblems'), currentUser);
+  showScreen('screen-battle');
+
+  if (battleUnsub) battleUnsub();
+  battleUnsub = db.collection('battles').doc(battleId).onSnapshot(snap => {
+    if (!snap.exists) return;
+    const data = snap.data();
+    activeBattle = { id: battleId, ...data, _opponent: opponent, _meIsA: data.aId === currentUser.id };
+    renderBattleBar();
+  });
+}
+
+function renderBattleBar(){
+  const b = activeBattle;
+  const meCount = b._meIsA ? b.aCount : b.bCount;
+  const oppCount = b._meIsA ? b.bCount : b.aCount;
+  const total = meCount + oppCount;
+  const pct = Math.min(100, total * 4);
+  const mePct = total ? (meCount/total)*pct : 0;
+  const oppPct = total ? (oppCount/total)*pct : 0;
+  $('powerA').style.width = mePct + '%';
+  $('powerB').style.width = oppPct + '%';
+  $('scoreA').textContent = meCount;
+  $('scoreB').textContent = oppCount;
+
+  if (pct >= 100) {
+    resolveRound(b, meCount, oppCount);
+  }
+}
+
+async function resolveRound(b, meCount, oppCount){
+  const ref = db.collection('battles').doc(b.id);
+  const updates = { aCount: 0, bCount: 0 };
+  if (meCount >= oppCount) { if (b._meIsA) updates.roundsA = (b.roundsA||0)+1; else updates.roundsB = (b.roundsB||0)+1; }
+  else { if (b._meIsA) updates.roundsB = (b.roundsB||0)+1; else updates.roundsA = (b.roundsA||0)+1; }
+  try { await ref.update(updates); } catch(e){}
+  const flash = $('koFlash');
+  flash.classList.remove('show'); void flash.offsetWidth;
+  flash.classList.add('show');
+}
+
+function spawnFireball(fromLeft){
+  const wrap = $('fightersRow');
+  const fb = document.createElement('div');
+  fb.className = 'fireball' + (fromLeft ? '' : ' reverse');
+  wrap.appendChild(fb);
+  setTimeout(() => fb.remove(), 600);
+}
+
+$('fighterLeft').addEventListener('click', async () => {
+  if (!activeBattle) return;
+  const b = activeBattle;
+  const field = b._meIsA ? 'aCount' : 'bCount';
+  spawnFireball(true);
+  try {
+    await db.collection('battles').doc(b.id).update({ [field]: (b[field]||0) + 1 });
+    await db.collection('users').doc(currentUser.id).update({ lastInfraction: todayISO(), bestStreak: currentUser.bestStreak || 0 });
+  } catch(e){ showToast('Errore: ' + e.code); }
+});
+
+$('backToLobby').addEventListener('click', () => {
+  if (battleUnsub) { battleUnsub(); battleUnsub = null; }
+  activeBattle = null;
+  renderLobby();
+  showScreen('screen-lobby');
+});
+
+/* ---------- BOOT ---------- */
+function boot(){
+  if (!initFirebase()) return;
+  showScreen('screen-auth');
+  let savedId = null;
+  try { savedId = localStorage.getItem(SESSION_KEY); } catch(e){}
+  if (savedId) {
+    const tryRestore = setInterval(() => {
+      const u = users.find(x => x.id === savedId);
+      if (u) { clearInterval(tryRestore); logIn(u); }
+    }, 300);
+    setTimeout(() => clearInterval(tryRestore), 4000);
+  }
+}
+boot();
+</script>
+
+</body>
+</html>
