@@ -124,47 +124,125 @@
   }
 
   .battle-wrap{
-    position:relative; border-radius:16px; overflow:hidden; border:1px solid var(--line);
-    background:linear-gradient(180deg, #1a1030 0%, #2b1836 40%, #241522 70%, #120c17 100%);
-    padding:16px 14px 20px;
+    position:relative; border-radius:16px; overflow:hidden; border:2px solid #000;
+    box-shadow:0 0 0 2px #3a2f1f, 0 8px 30px rgba(0,0,0,0.6);
+    padding:0;
   }
-  .skyline{
-    height:46px;
-    background:linear-gradient(180deg, transparent, rgba(0,0,0,0.3)),
-      repeating-linear-gradient(90deg, #1c1330 0 24px, #241a3a 24px 48px);
-    position:relative; margin:0 -14px 10px; opacity:0.8;
+
+  /* ---- HUD: barre vita 1P/2P in stile arcade ---- */
+  .hud{
+    background:#0a0a0e;
+    padding:8px 10px 10px;
+    border-bottom:2px solid #000;
   }
-  .lanterns{position:absolute; top:2px; left:0; right:0; display:flex; justify-content:space-around; font-size:1rem;}
-  .torii{text-align:center; font-size:1.6rem; opacity:0.55; margin-bottom:4px;}
-  .power-bar-wrap{
-    height:22px; border-radius:11px; background:#0c0e14; border:1px solid var(--line);
-    overflow:hidden; display:flex; margin:6px 0 4px;
+  .hud-row{display:flex; align-items:center; gap:8px;}
+  .hud-row.reverse{flex-direction:row-reverse;}
+  .hud-tag{
+    font-family:'Arial Black',sans-serif; font-size:0.85rem; color:var(--neon-gold);
+    text-shadow:1px 1px 0 #000; width:28px; flex-shrink:0;
   }
-  .power-a{background:linear-gradient(90deg, var(--fire1), var(--fire2)); height:100%; width:0%; transition:width 0.25s;}
-  .power-b{background:linear-gradient(90deg, var(--neon-cyan), #2d6fff); height:100%; width:0%; transition:width 0.25s;}
-  .score-row{display:flex; justify-content:space-between; font-size:0.72rem; color:var(--muted); margin-bottom:14px;}
-  .fighters-row{display:flex; justify-content:space-between; align-items:flex-end; position:relative; min-height:150px;}
-  .fighter{width:44%; text-align:center;}
-  .fighter .big-sprite{font-size:3.4rem; filter:drop-shadow(0 6px 6px rgba(0,0,0,0.5)); transition:transform 0.12s;}
-  .fighter.tappable .big-sprite{cursor:pointer;}
-  .fighter.tappable .big-sprite:active{transform:scale(0.88) rotate(-4deg);}
-  .fighter .fname{font-size:0.78rem; margin-top:4px; font-weight:700;}
-  .fighter.right .fname{color:var(--neon-cyan);}
-  .fighter.left .fname{color:var(--fire2);}
-  .vs-mark{font-family:'Arial Black',sans-serif; font-size:1rem; color:var(--neon-gold); text-shadow:0 0 8px var(--neon-gold);}
+  .hp-track{
+    flex:1; height:16px; background:#1a1005; border:2px solid #000;
+    box-shadow:inset 0 0 0 1px #4d3a1a;
+    display:flex; overflow:hidden;
+  }
+  .hud-row.reverse .hp-track{flex-direction:row-reverse;}
+  .hp-fill{height:100%; background:linear-gradient(180deg,#fff59d,#ffcf3d 40%,#e08a1a); transition:width 0.3s ease-out;}
+  .hud-row.reverse .hp-fill{background:linear-gradient(180deg,#9df0ff,#3de3ff 40%,#1a7ea8);}
+  .pips-row{display:flex; justify-content:space-between; font-size:0.6rem; color:var(--muted); margin:3px 2px 0;}
+  .pip-set{display:flex; gap:3px;}
+  .pip-set.reverse{flex-direction:row-reverse;}
+  .pip{width:9px; height:9px; border:1px solid #444; background:#1a1005;}
+  .pip.won{background:var(--neon-gold); border-color:var(--neon-gold); box-shadow:0 0 4px var(--neon-gold);}
+  .names-row{display:flex; justify-content:space-between; font-size:0.68rem; font-weight:700; margin-top:5px; letter-spacing:0.03em;}
+  .names-row .n-left{color:var(--fire2);}
+  .names-row .n-right{color:var(--neon-cyan);}
+
+  /* ---- scena fissa: vicolo giapponese di notte ---- */
+  .arena-scene{
+    position:relative;
+    height:230px;
+    overflow:hidden;
+    background:
+      linear-gradient(180deg, #1a1030 0%, #2b1836 45%, #3a2038 62%, #1c1220 100%);
+  }
+  .arena-scene::before{ /* sagome edifici sullo sfondo */
+    content:"";
+    position:absolute; left:0; right:0; bottom:72px; height:90px;
+    background:
+      repeating-linear-gradient(90deg, #1c1330 0 34px, #26193f 34px 68px),
+      repeating-linear-gradient(0deg, transparent 0 10px, rgba(255,214,120,0.05) 10px 12px);
+    clip-path:polygon(0% 100%, 0% 30%, 8% 30%, 8% 10%, 18% 10%, 18% 40%, 30% 40%, 30% 5%, 42% 5%, 42% 35%, 55% 35%, 55% 15%, 68% 15%, 68% 45%, 80% 45%, 80% 0%, 92% 0%, 92% 38%, 100% 38%, 100% 100%);
+    opacity:0.9;
+  }
+  .lanterns-row{
+    position:absolute; top:14px; left:0; right:0;
+    display:flex; justify-content:space-around; font-size:1.15rem;
+    filter:drop-shadow(0 0 6px rgba(255,90,46,0.7));
+    animation:swing 3s ease-in-out infinite;
+  }
+  @keyframes swing{0%,100%{transform:rotate(-3deg);} 50%{transform:rotate(3deg);}}
+  .torii-bg{
+    position:absolute; bottom:70px; left:50%; transform:translateX(-50%);
+    font-size:2.6rem; opacity:0.5; filter:drop-shadow(0 0 10px rgba(255,90,46,0.3));
+  }
+  .ground{
+    position:absolute; left:0; right:0; bottom:0; height:72px;
+    background:linear-gradient(180deg, #4a3a2a 0%, #241a12 100%);
+    border-top:3px solid #1a120c;
+  }
+  .ground::before{ /* linee prospettiva pavimento */
+    content:"";
+    position:absolute; inset:0;
+    background-image:repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 40px);
+  }
+
+  .fighter-slot{
+    position:absolute; bottom:60px; width:110px;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .fighter-slot.slot-left{left:8%;}
+  .fighter-slot.slot-right{right:8%;}
+  .sprite-aura{
+    width:88px; height:88px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:3.4rem;
+    filter:drop-shadow(0 10px 8px rgba(0,0,0,0.55));
+    animation:idleBob 1.6s ease-in-out infinite;
+  }
+  .fighter-slot.slot-right .sprite-aura{transform:scaleX(-1);}
+  .fighter-slot.slot-right .sprite-aura{animation:idleBobR 1.6s ease-in-out infinite;}
+  @keyframes idleBob{0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);}}
+  @keyframes idleBobR{0%,100%{transform:translateY(0) scaleX(-1);} 50%{transform:translateY(-6px) scaleX(-1);}}
+  .fighter-slot.tappable .sprite-aura{cursor:pointer;}
+  .fighter-slot.attacking .sprite-aura{animation:lungeLeft 0.35s ease-out;}
+  .fighter-slot.slot-right.attacking .sprite-aura{animation:lungeRight 0.35s ease-out;}
+  @keyframes lungeLeft{0%{transform:translateX(0);} 40%{transform:translateX(26px) scale(1.08);} 100%{transform:translateX(0);}}
+  @keyframes lungeRight{0%{transform:translateX(0) scaleX(-1);} 40%{transform:translateX(-26px) scale(1.08) scaleX(-1);} 100%{transform:translateX(0) scaleX(-1);}}
+  .fighter-slot .fname{
+    font-size:0.72rem; font-weight:700; margin-top:2px;
+    text-shadow:1px 1px 0 #000;
+  }
+  .fighter-slot.slot-left .fname{color:var(--fire2);}
+  .fighter-slot.slot-right .fname{color:var(--neon-cyan);}
+  .shadow-oval{
+    width:60px; height:14px; border-radius:50%;
+    background:rgba(0,0,0,0.45); filter:blur(2px); margin-top:-8px;
+  }
+
   .fireball{
-    position:absolute; bottom:56px; width:20px; height:20px; border-radius:50%;
+    position:absolute; bottom:96px; width:20px; height:20px; border-radius:50%;
     background:radial-gradient(circle, var(--fire2), var(--fire1)); box-shadow:0 0 10px var(--fire1);
-    pointer-events:none; animation:flyRight 0.55s ease-out forwards;
+    pointer-events:none; animation:flyRight 0.5s ease-out forwards; z-index:5;
   }
-  .fireball.reverse{animation:flyLeft 0.55s ease-out forwards;}
-  @keyframes flyRight{0%{left:18%; opacity:1;} 100%{left:78%; opacity:0.2;}}
-  @keyframes flyLeft{0%{right:18%; opacity:1;} 100%{right:78%; opacity:0.2;}}
+  .fireball.reverse{animation:flyLeft 0.5s ease-out forwards;}
+  @keyframes flyRight{0%{left:20%; opacity:1;} 100%{left:76%; opacity:0.15;}}
+  @keyframes flyLeft{0%{right:20%; opacity:1;} 100%{right:76%; opacity:0.15;}}
   .ko-flash{
-    position:absolute; inset:0; background:rgba(255,178,61,0.18); display:flex;
+    position:absolute; inset:0; background:rgba(255,178,61,0.2); display:flex;
     align-items:center; justify-content:center; font-family:'Arial Black',sans-serif;
-    font-size:1.8rem; color:var(--neon-gold); text-shadow:0 0 10px var(--neon-gold);
-    opacity:0; pointer-events:none;
+    font-size:2.2rem; color:var(--neon-gold); text-shadow:0 0 12px var(--neon-gold), 2px 2px 0 #000;
+    opacity:0; pointer-events:none; z-index:10;
   }
   .ko-flash.show{opacity:1; animation:koFade 0.9s ease-out forwards;}
   @keyframes koFade{0%{opacity:1;} 100%{opacity:0;}}
@@ -259,27 +337,36 @@
 <!-- BATTLE -->
 <div class="screen" id="screen-battle">
   <div class="battle-wrap" id="battleWrap">
-    <div class="ko-flash" id="koFlash">K.O.!</div>
-    <div class="skyline"><div class="lanterns">🏮 🏮 🏮 🏮 🏮</div></div>
-    <div class="torii">⛩️</div>
-    <div class="power-bar-wrap">
-      <div class="power-a" id="powerA"></div>
-      <div class="power-b" id="powerB"></div>
-    </div>
-    <div class="score-row">
-      <span id="scoreA">0</span>
-      <span id="roundLabel">Round in corso</span>
-      <span id="scoreB">0</span>
-    </div>
-    <div class="fighters-row" id="fightersRow">
-      <div class="fighter left tappable" id="fighterLeft">
-        <div class="big-sprite" id="spriteLeft"></div>
-        <div class="fname" id="nameLeft"></div>
+    <div class="hud">
+      <div class="hud-row">
+        <span class="hud-tag">1P</span>
+        <div class="hp-track"><div class="hp-fill" id="hpLeft" style="width:100%;"></div></div>
       </div>
-      <div class="vs-mark">VS</div>
-      <div class="fighter right" id="fighterRight">
-        <div class="big-sprite" id="spriteRight"></div>
-        <div class="fname" id="nameRight"></div>
+      <div class="pips-row">
+        <div class="pip-set" id="pipsLeft"></div>
+        <div class="pip-set reverse" id="pipsRight"></div>
+      </div>
+      <div class="hud-row reverse">
+        <span class="hud-tag">2P</span>
+        <div class="hp-track"><div class="hp-fill" id="hpRight" style="width:100%;"></div></div>
+      </div>
+      <div class="names-row">
+        <span class="n-left" id="nameLeft"></span>
+        <span class="n-right" id="nameRight"></span>
+      </div>
+    </div>
+    <div class="arena-scene" id="fightersRow">
+      <div class="ko-flash" id="koFlash">K.O.!</div>
+      <div class="lanterns-row">🏮 🏮 🏮 🏮 🏮</div>
+      <div class="torii-bg">⛩️</div>
+      <div class="ground"></div>
+      <div class="fighter-slot slot-left tappable" id="fighterLeft">
+        <div class="sprite-aura" id="spriteLeft"></div>
+        <div class="shadow-oval"></div>
+      </div>
+      <div class="fighter-slot slot-right" id="fighterRight">
+        <div class="sprite-aura" id="spriteRight"></div>
+        <div class="shadow-oval"></div>
       </div>
     </div>
   </div>
@@ -545,6 +632,7 @@ function openBattle(battleId, opponent){
 
   renderEmblems($('battleEmblems'), currentUser);
   showScreen('screen-battle');
+  prevMeCount = null; prevOppCount = null; resolvingRound = false;
 
   if (battleUnsub) battleUnsub();
   battleUnsub = db.collection('battles').doc(battleId).onSnapshot(snap => {
@@ -555,22 +643,50 @@ function openBattle(battleId, opponent){
   });
 }
 
+const HITS_TO_KO = 10;
+let prevMeCount = null, prevOppCount = null;
+let resolvingRound = false;
+
+function renderPips(container, wonCount){
+  const max = 5;
+  const shown = wonCount % max === 0 && wonCount > 0 ? max : wonCount % max;
+  let html = '';
+  for (let i=0; i<max; i++) html += `<div class="pip${i < shown ? ' won' : ''}"></div>`;
+  container.innerHTML = html;
+}
+
 function renderBattleBar(){
   const b = activeBattle;
   const meCount = b._meIsA ? b.aCount : b.bCount;
   const oppCount = b._meIsA ? b.bCount : b.aCount;
-  const total = meCount + oppCount;
-  const pct = Math.min(100, total * 4);
-  const mePct = total ? (meCount/total)*pct : 0;
-  const oppPct = total ? (oppCount/total)*pct : 0;
-  $('powerA').style.width = mePct + '%';
-  $('powerB').style.width = oppPct + '%';
-  $('scoreA').textContent = meCount;
-  $('scoreB').textContent = oppCount;
+  const myRounds = b._meIsA ? (b.roundsA||0) : (b.roundsB||0);
+  const oppRounds = b._meIsA ? (b.roundsB||0) : (b.roundsA||0);
 
-  if (pct >= 100) {
+  const myHp = Math.max(0, 100 - oppCount * HITS_TO_KO);
+  const oppHp = Math.max(0, 100 - meCount * HITS_TO_KO);
+  $('hpLeft').style.width = myHp + '%';
+  $('hpRight').style.width = oppHp + '%';
+  renderPips($('pipsLeft'), myRounds);
+  renderPips($('pipsRight'), oppRounds);
+
+  if (prevMeCount !== null) {
+    if (meCount > prevMeCount) triggerAttack('left');
+    if (oppCount > prevOppCount) triggerAttack('right');
+  }
+  prevMeCount = meCount; prevOppCount = oppCount;
+
+  if ((myHp <= 0 || oppHp <= 0) && !resolvingRound) {
+    resolvingRound = true;
     resolveRound(b, meCount, oppCount);
   }
+  if (myHp > 0 && oppHp > 0) resolvingRound = false;
+}
+
+function triggerAttack(side){
+  const slot = side === 'left' ? $('fighterLeft') : $('fighterRight');
+  slot.classList.remove('attacking'); void slot.offsetWidth;
+  slot.classList.add('attacking');
+  spawnFireball(side === 'left');
 }
 
 async function resolveRound(b, meCount, oppCount){
@@ -578,10 +694,13 @@ async function resolveRound(b, meCount, oppCount){
   const updates = { aCount: 0, bCount: 0 };
   if (meCount >= oppCount) { if (b._meIsA) updates.roundsA = (b.roundsA||0)+1; else updates.roundsB = (b.roundsB||0)+1; }
   else { if (b._meIsA) updates.roundsB = (b.roundsB||0)+1; else updates.roundsA = (b.roundsA||0)+1; }
-  try { await ref.update(updates); } catch(e){}
   const flash = $('koFlash');
   flash.classList.remove('show'); void flash.offsetWidth;
   flash.classList.add('show');
+  setTimeout(async () => {
+    try { await ref.update(updates); } catch(e){}
+    prevMeCount = 0; prevOppCount = 0;
+  }, 700);
 }
 
 function spawnFireball(fromLeft){
@@ -596,7 +715,6 @@ $('fighterLeft').addEventListener('click', async () => {
   if (!activeBattle) return;
   const b = activeBattle;
   const field = b._meIsA ? 'aCount' : 'bCount';
-  spawnFireball(true);
   try {
     await db.collection('battles').doc(b.id).update({ [field]: (b[field]||0) + 1 });
     await db.collection('users').doc(currentUser.id).update({ lastInfraction: todayISO(), bestStreak: currentUser.bestStreak || 0 });
