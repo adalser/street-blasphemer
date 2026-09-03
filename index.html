@@ -129,27 +129,29 @@
     padding:0;
   }
 
-  /* ---- HUD: barre vita 1P/2P in stile arcade ---- */
+  /* ---- HUD: barre vita 1P/2P affiancate ai lati, stile arcade ---- */
   .hud{
     background:#0a0a0e;
-    padding:8px 10px 10px;
+    padding:10px 12px;
     border-bottom:2px solid #000;
   }
-  .hud-row{display:flex; align-items:center; gap:8px;}
-  .hud-row.reverse{flex-direction:row-reverse;}
+  .hud-line{display:flex; align-items:center; gap:8px;}
   .hud-tag{
     font-family:'Arial Black',sans-serif; font-size:0.85rem; color:var(--neon-gold);
-    text-shadow:1px 1px 0 #000; width:28px; flex-shrink:0;
+    text-shadow:1px 1px 0 #000; flex-shrink:0;
   }
   .hp-track{
-    flex:1; height:16px; background:#1a1005; border:2px solid #000;
+    flex:1; height:18px; background:#1a1005; border:2px solid #000;
     box-shadow:inset 0 0 0 1px #4d3a1a;
-    display:flex; overflow:hidden;
+    overflow:hidden;
   }
-  .hud-row.reverse .hp-track{flex-direction:row-reverse;}
   .hp-fill{height:100%; background:linear-gradient(180deg,#fff59d,#ffcf3d 40%,#e08a1a); transition:width 0.3s ease-out;}
-  .hud-row.reverse .hp-fill{background:linear-gradient(180deg,#9df0ff,#3de3ff 40%,#1a7ea8);}
-  .pips-row{display:flex; justify-content:space-between; font-size:0.6rem; color:var(--muted); margin:3px 2px 0;}
+  .hp-track-right .hp-fill{background:linear-gradient(180deg,#9df0ff,#3de3ff 40%,#1a7ea8); margin-left:auto;}
+  .vs-mark{
+    font-family:'Arial Black',sans-serif; font-size:0.95rem; color:var(--neon-gold);
+    text-shadow:0 0 8px var(--neon-gold); flex-shrink:0; padding:0 2px;
+  }
+  .pips-row{display:flex; justify-content:space-between; font-size:0.6rem; color:var(--muted); margin:4px 0 0;}
   .pip-set{display:flex; gap:3px;}
   .pip-set.reverse{flex-direction:row-reverse;}
   .pip{width:9px; height:9px; border:1px solid #444; background:#1a1005;}
@@ -158,10 +160,19 @@
   .names-row .n-left{color:var(--fire2);}
   .names-row .n-right{color:var(--neon-cyan);}
 
+  /* ---- modalità quasi a pieno schermo durante il combattimento ---- */
+  body.battle-active{padding:0;}
+  body.battle-active .arcade-title,
+  body.battle-active .arcade-sub{display:none;}
+  #screen-battle.active{max-width:720px;}
+  body.battle-active .battle-wrap{border-radius:0; border-left:none; border-right:none;}
+
   /* ---- scena fissa: immagine fornita dall'utente ---- */
   .arena-scene{
     position:relative;
-    height:260px;
+    height:62vh;
+    max-height:520px;
+    min-height:280px;
     overflow:hidden;
     background-image:
       linear-gradient(180deg, rgba(10,8,20,0.05) 0%, rgba(10,8,20,0.35) 100%),
@@ -180,15 +191,11 @@
     display:flex; align-items:center; justify-content:center;
     font-size:3.4rem;
     filter:drop-shadow(0 10px 8px rgba(0,0,0,0.6));
-    animation:idleBob 1.6s ease-in-out infinite;
   }
   .sprite-aura img{
     height:150px; width:auto; display:block; pointer-events:none;
   }
   .fighter-slot.slot-right .sprite-aura{transform:scaleX(-1);}
-  .fighter-slot.slot-right .sprite-aura{animation:idleBobR 1.6s ease-in-out infinite;}
-  @keyframes idleBob{0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);}}
-  @keyframes idleBobR{0%,100%{transform:translateY(0) scaleX(-1);} 50%{transform:translateY(-6px) scaleX(-1);}}
   .fighter-slot.tappable .sprite-aura{cursor:pointer;}
   .fighter-slot.attacking .sprite-aura{animation:lungeLeft 0.35s ease-out;}
   .fighter-slot.slot-right.attacking .sprite-aura{animation:lungeRight 0.35s ease-out;}
@@ -313,17 +320,16 @@
 <div class="screen" id="screen-battle">
   <div class="battle-wrap" id="battleWrap">
     <div class="hud">
-      <div class="hud-row">
+      <div class="hud-line">
         <span class="hud-tag">1P</span>
-        <div class="hp-track"><div class="hp-fill" id="hpLeft" style="width:100%;"></div></div>
+        <div class="hp-track hp-track-left"><div class="hp-fill" id="hpLeft" style="width:100%;"></div></div>
+        <span class="vs-mark">VS</span>
+        <div class="hp-track hp-track-right"><div class="hp-fill" id="hpRight" style="width:100%;"></div></div>
+        <span class="hud-tag">2P</span>
       </div>
       <div class="pips-row">
         <div class="pip-set" id="pipsLeft"></div>
         <div class="pip-set reverse" id="pipsRight"></div>
-      </div>
-      <div class="hud-row reverse">
-        <span class="hud-tag">2P</span>
-        <div class="hp-track"><div class="hp-fill" id="hpRight" style="width:100%;"></div></div>
       </div>
       <div class="names-row">
         <span class="n-left" id="nameLeft"></span>
@@ -362,7 +368,6 @@ const firebaseConfig = {
   messagingSenderId: "1090706237408",
   appId: "1:1090706237408:web:6a1e59b0d7867fd3296d85",
   measurementId: "G-B3EWBHB660"
-
 };
 /* ============================================================ */
 
@@ -608,6 +613,7 @@ function openBattle(battleId, opponent){
 
   renderEmblems($('battleEmblems'), currentUser);
   showScreen('screen-battle');
+  document.body.classList.add('battle-active');
   prevMeCount = null; prevOppCount = null; resolvingRound = false;
 
   if (battleUnsub) battleUnsub();
@@ -698,6 +704,7 @@ $('fighterLeft').addEventListener('click', async () => {
 });
 
 $('backToLobby').addEventListener('click', () => {
+  document.body.classList.remove('battle-active');
   if (battleUnsub) { battleUnsub(); battleUnsub = null; }
   activeBattle = null;
   renderLobby();
