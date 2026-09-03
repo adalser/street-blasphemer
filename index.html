@@ -182,25 +182,25 @@
   }
 
   .fighter-slot{
-    position:absolute; bottom:10px; width:130px;
+    position:absolute; bottom:10px; width:220px;
     display:flex; flex-direction:column; align-items:center;
   }
-  .fighter-slot.slot-left{left:6%;}
-  .fighter-slot.slot-right{right:6%;}
+  .fighter-slot.slot-left{left:2%;}
+  .fighter-slot.slot-right{right:2%;}
   .sprite-aura{
     display:flex; align-items:center; justify-content:center;
-    font-size:3.4rem;
+    font-size:8.5rem;
     filter:drop-shadow(0 10px 8px rgba(0,0,0,0.6));
   }
   .sprite-aura img{
-    height:150px; width:auto; display:block; pointer-events:none;
+    height:375px; max-height:58vh; width:auto; display:block; pointer-events:none;
   }
   .fighter-slot.slot-right .sprite-aura{transform:scaleX(-1);}
   .fighter-slot.tappable .sprite-aura{cursor:pointer;}
   .fighter-slot.attacking .sprite-aura{animation:lungeLeft 0.35s ease-out;}
   .fighter-slot.slot-right.attacking .sprite-aura{animation:lungeRight 0.35s ease-out;}
-  @keyframes lungeLeft{0%{transform:translateX(0);} 40%{transform:translateX(26px) scale(1.08);} 100%{transform:translateX(0);}}
-  @keyframes lungeRight{0%{transform:translateX(0) scaleX(-1);} 40%{transform:translateX(-26px) scale(1.08) scaleX(-1);} 100%{transform:translateX(0) scaleX(-1);}}
+  @keyframes lungeLeft{0%{transform:translateX(0);} 40%{transform:translateX(45px) scale(1.08);} 100%{transform:translateX(0);}}
+  @keyframes lungeRight{0%{transform:translateX(0) scaleX(-1);} 40%{transform:translateX(-45px) scale(1.08) scaleX(-1);} 100%{transform:translateX(0) scaleX(-1);}}
   .fighter-slot .fname{
     font-size:0.72rem; font-weight:700; margin-top:2px;
     text-shadow:1px 1px 0 #000;
@@ -354,6 +354,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<audio id="battleMusic" src="assets/battle-theme.mp3" loop preload="auto"></audio>
 
 <script>
 /* ============================================================
@@ -361,7 +362,7 @@
    (Console Firebase → Impostazioni progetto → Le tue app → SDK config)
    ============================================================ */
 const firebaseConfig = {
- apiKey: "AIzaSyBCzj5tHrfYDnNfBpOt5XT50iAPkbIo2Kg",
+  apiKey: "AIzaSyBCzj5tHrfYDnNfBpOt5XT50iAPkbIo2Kg",
   authDomain: "street-blasphemer.firebaseapp.com",
   projectId: "street-blasphemer",
   storageBucket: "street-blasphemer.firebasestorage.app",
@@ -549,6 +550,7 @@ function logIn(user){
   showScreen('screen-lobby');
 }
 $('logoutBtn').addEventListener('click', () => {
+  stopBattleMusic();
   currentUser = null;
   try { localStorage.removeItem(SESSION_KEY); } catch(e){}
   $('loginUser').value=''; $('loginPass').value='';
@@ -589,7 +591,22 @@ function renderLobby(){
   renderEmblems($('lobbyEmblems'), currentUser);
 }
 
+function playBattleMusic(){
+  const audio = $('battleMusic');
+  audio.currentTime = 0;
+  audio.volume = 0.55;
+  audio.play().catch(() => {
+    showToast('Tocca lo schermo per attivare l\'audio del combattimento.');
+  });
+}
+function stopBattleMusic(){
+  const audio = $('battleMusic');
+  audio.pause();
+  audio.currentTime = 0;
+}
+
 async function challenge(opponentId){
+  playBattleMusic();
   const opponent = users.find(u => u.id === opponentId);
   const bId = battleIdFor(currentUser.id, opponentId);
   const ref = db.collection('battles').doc(bId);
@@ -704,6 +721,7 @@ $('fighterLeft').addEventListener('click', async () => {
 });
 
 $('backToLobby').addEventListener('click', () => {
+  stopBattleMusic();
   document.body.classList.remove('battle-active');
   if (battleUnsub) { battleUnsub(); battleUnsub = null; }
   activeBattle = null;
